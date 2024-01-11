@@ -1,28 +1,10 @@
-const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
+const passport = require('./../authServer/auth/localize');
+// const LocalStrategy = require('passport-local').Strategy;
 
 const genHash = require('./util/passwordFxn');
 
 const db = require("../dbconfig/configDb");
  
-
-passport.use('localSignup', new LocalStrategy({
-    usernameField: 'phone',
-    passwordField: 'password',
-    passReqToCallback: true
-},
-(req, phone, password, next) => {
-    findUserByPhone(phone, (user) => {
-        if(user) return next(null, false);
-        else {
-            //hash password here b4 creating
-            let newUser = createUser(phone, password);
-
-            newUser.save(() => next(null, newUser))
-        }
-    })
-}
-))
 
 
 const getUserSignInDetail = (req, res) => {
@@ -31,23 +13,36 @@ const getUserSignInDetail = (req, res) => {
     res.send('User Signin details, because I am Get');
 }
 
-const signIn = (req, res) => {
-   const {password, userName, schHeadId, parentageId, teacherId} = req.body;
-    const hash = genHash(password)
-    try {
-        db.transaction(async (tx) => {
-            const loginId = await tx('logins').insert({
-                hash: hash,
-                user_name: userName,
-                parentage_id: parentageId,
-                teacher_id: teacherId,
-                sch_head_id: schHeadId 
-            }, 'id')
-            return res.status(200).send(loginId[0].id);
-        })
-    } catch(error) {
-        console.log('signin err', error)
-    }
+const signIn = (req, res, next) => {
+    //    const {
+    //         password, 
+    //         userName, schHeadId, parentageId, teacherId
+    //     } = req.body;
+    // const hash = genHash(password)
+    
+    passport.authenticate('local', (err, user, info) => {
+            if (err) { handleResponse(res, 500, 'error'); }
+            if (!user) { handleResponse(res, 404, 'User not found'); }
+            if (user) {
+              req.logIn(user, function (err) {
+                if (err) { handleResponse(res, 500, 'error'); }
+                handleResponse(res, 200, 'success');
+              });
+            }
+    })(req, res, next);    
+
+    //former
+        // db.transaction(async (tx) => {
+        //     const loginId = await tx('logins').insert({
+        //         hash: hash,
+        //         user_name: userName,
+        //         parentage_id: parentageId,
+        //         teacher_id: teacherId,
+        //         sch_head_id: schHeadId 
+        //     }, 'id')
+        //     return res.status(200).send(loginId[0].id);
+        // })
+    
 }
 
 const updateSignIn = (req, res) => {
@@ -63,5 +58,9 @@ const deleteSignInUser = (req, res) => {
         .del()
     res.status(200).send('signin is deleted');
 }
+
+function handleResponse(res, code, statusMsg) {
+    res.status(code).json({status: statusMsg});
+  }
 
 module.exports = {deleteSignInUser, updateSignIn, getUserSignInDetail, signIn};

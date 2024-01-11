@@ -3,7 +3,10 @@ const express = require('express');
 const router = express.Router();
 // const multer = require('multer');
 // const upload = multer();
+const authHelpers = require('../authServer/auth/helperFxns');
+
 router.use(express.json())
+
 // const db = require("../dbconfig/configDb");
 const { 
     getUser, 
@@ -15,7 +18,7 @@ const {
 
     router
         .get('/', getUser)
-        .post('/', regUser)
+        .post('/', authHelpers.loginRedirect, regUser)
         .patch('/:id', updateRegister)
         .delete('/:id', deleteRegEntry)
 

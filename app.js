@@ -1,12 +1,21 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const passport = require('passport');
+
 
 // const fileUpload = require('express-fileupload');
 const app = express();
 
 //db
 const db = require('./dbconfig/configDb');
+app.use(cookieParser());
+app.use(bodyParser.json());
+app.use(express.urlencoded({extended: false}));
 
-app.use(express.urlencoded({extended: false}))
+app.use(passport.initialize());
+app.use(passport.session());
+
 
 const registerRouter = require("./router/register");
 const signInRouter = require("./router/signin");
